@@ -50,6 +50,19 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(filtered[start:end])
 }
 
+func GetBookByID(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+	id, _ := strconv.Atoi(idStr)
+
+	for _, b := range Books {
+		if b.ID == id {
+			json.NewEncoder(w).Encode(b)
+			return
+		}
+	}
+	http.Error(w, "Not found", 404)
+}
+
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	var book models.Book
 	json.NewDecoder(r.Body).Decode(&book)

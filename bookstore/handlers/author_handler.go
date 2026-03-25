@@ -28,4 +28,5 @@ func CreateAuthor(w http.ResponseWriter, r *http.Request) {
 	Authors = append(Authors, author)
 
 	json.NewEncoder(w).Encode(author)
+	
 }

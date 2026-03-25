@@ -13,6 +13,7 @@ var Books []models.Book
 var BookID = 1
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
@@ -51,8 +52,14 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBookByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
 	for _, b := range Books {
 		if b.ID == id {
@@ -60,10 +67,48 @@ func GetBookByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	http.Error(w, "Not found", 404)
+	http.Error(w, "Not found", http.StatusNotFound)
+}
+
+func authorExists(id int) bool {
+	for _, a := range Authors {
+		if a.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func categoryExists(id int) bool {
+	for _, c := range Categories {
+		if c.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func validateBook(book models.Book, checkIDs bool) string {
+	if book.Title == "" {
+		return "Title is required"
+	}
+	if book.Price < 0.01 {
+		return "Price must be at least 0.01"
+	}
+	if checkIDs {
+		if book.AuthorID <= 0 || !authorExists(book.AuthorID) {
+			return "Invalid or non-existent author_id"
+		}
+		if book.CategoryID <= 0 || !categoryExists(book.CategoryID) {
+			return "Invalid or non-existent category_id"
+		}
+	}
+	return ""
 }
 
 func CreateBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
 	var book models.Book
 	json.NewDecoder(r.Body).Decode(&book)
 
@@ -76,10 +121,13 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	BookID++
 	Books = append(Books, book)
 
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(book)
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, _ := strconv.Atoi(idStr)
 
@@ -91,7 +139,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	http.Error(w, "Not found", 404)
+	http.Error(w, "Not found", http.StatusNotFound)
 }
 
 func DeleteBook(w http.ResponseWriter, r *http.Request) {
@@ -104,5 +152,5 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	http.Error(w, "Not found", 404)
+	http.Error(w, "Not found", http.StatusNotFound)
 }

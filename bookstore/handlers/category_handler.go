@@ -11,10 +11,16 @@ var Categories []models.Category
 var CategoryID = 1
 
 func GetCategories(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Categories)
+	w.Header().Set("Content-Type", "application/json")
+ 
+	result := []models.Category{}
+	result = append(result, Categories...)
+	json.NewEncoder(w).Encode(result)
 }
 
 func CreateCategory(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	var category models.Category
 	json.NewDecoder(r.Body).Decode(&category)
 
@@ -27,5 +33,6 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 	CategoryID++
 	Categories = append(Categories, category)
 
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(category)
 }
